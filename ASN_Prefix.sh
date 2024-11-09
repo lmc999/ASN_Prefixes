@@ -40,9 +40,14 @@ if [ "$IP_VERSION" == "4" ] || [ "$IP_VERSION" == "46" ]; then
 
     if [ "$should_download_v4" = true ]; then
         echo "正在下载IPv4数据文件..."
+        mkdir -p "$(dirname "$v4_file")"  # 创建必要的目录
         wget -O "$v4_file" "$downlinkV4"
+        if [ $? -ne 0 ]; then
+            echo "下载IPv4数据文件失败！"
+            exit 1
+        fi
         # 清理旧的IPv4数据文件
-        find "$data_dir" -type f -name 'pfx2as-*.gz' ! -name "${filenameV4}" -delete
+        find "$data_dir" -type f -wholename "$data_dir/pfx2as-*.gz" ! -name "$(basename "$filenameV4")" -delete
     fi
 fi
 
@@ -59,9 +64,14 @@ if [ "$IP_VERSION" == "6" ] || [ "$IP_VERSION" == "46" ]; then
 
     if [ "$should_download_v6" = true ]; then
         echo "正在下载IPv6数据文件..."
+        mkdir -p "$(dirname "$v6_file")"  # 创建必要的目录
         wget -O "$v6_file" "$downlinkV6"
+        if [ $? -ne 0 ]; then
+            echo "下载IPv6数据文件失败！"
+            exit 1
+        fi
         # 清理旧的IPv6数据文件
-        find "$data_dir" -type f -name 'pfx2as-*.gz' ! -name "${filenameV6}" -delete
+        find "$data_dir" -type f -wholename "$data_dir/pfx2as-*.gz" ! -name "$(basename "$filenameV6")" -delete
     fi
 fi
 
@@ -70,7 +80,7 @@ output_file="$HOME/$ASN.txt"
 
 if [ "$IP_VERSION" == "4" ] || [ "$IP_VERSION" == "46" ]; then
     echo "正在处理AS$ASN的IPv4前缀..."
-    zgrep -w "${ASN}" "$data_dir/${filenameV4}" | while read -r line; do
+    zgrep -w "${ASN}" "$v4_file" | while read -r line; do
         ip=$(echo "$line" | awk '{print $1}')
         mask=$(echo "$line" | awk '{print $2}')
         echo "${ip}/${mask}" >> "$output_file"
@@ -80,7 +90,7 @@ fi
 
 if [ "$IP_VERSION" == "6" ] || [ "$IP_VERSION" == "46" ]; then
     echo "正在处理AS$ASN的IPv6前缀..."
-    zgrep -w "${ASN}" "$data_dir/${filenameV6}" | while read -r line; do
+    zgrep -w "${ASN}" "$v6_file" | while read -r line; do
         ip=$(echo "$line" | awk '{print $1}')
         mask=$(echo "$line" | awk '{print $2}')
         echo "${ip}/${mask}" >> "$output_file"
